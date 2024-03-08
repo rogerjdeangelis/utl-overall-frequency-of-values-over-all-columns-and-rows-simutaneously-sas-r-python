@@ -4,6 +4,9 @@ Overall frequency of values over all columns and rows simutaneously sas r python
 
 This is best done with R
 
+   0  sas hash
+      Keintz, Mark
+      mkeintz@outlook.com
    1  r using table function with stattransfer
    2  r pure sql solution with stattransfer
    3  sas gather macro
@@ -13,7 +16,6 @@ This is best done with R
 github
 https://tinyurl.com/44uzxfkm
 https://github.com/rogerjdeangelis/utl-overall-frequency-of-values-over-all-columns-and-rows-simutaneously-sas-r-python
-
 
 macros (stattransfer array do_over varlist untranspose macros)
 https://tinyurl.com/y9nfugth
@@ -35,37 +37,69 @@ http://stackoverflow.com/questions/43786211/count-number-of-times-a-value-appear
 
 /************************************************************************************************************************************/
 /*                                             |                                                               |                    */
+/*             INPUT                           |                        PROCESS                                |      OUTPUT        */
 /*                                             |                                                               |                    */
-/*  SD1.HAVE total obs=3                       | 1 R USING STATTRANSFER                                        |                    */
+/*  SD1.HAVE total obs=3                       | 0 SAS HASH                                                    |   VALUE    FREQ    */
+/*                                             | ==========                                                    |                    */
+/*                                             |                                                               |    123       3     */
+/*  Obs     XX     YY     ZZ                   | data _null_;                                                  |    234       2     */
+/*                                             |                                                               |    345       2     */
+/*   1     123    456    234                   |   set sd1.have end=end_of_have;                               |    456       2     */
+/*   2     456    123    345                   |                                                               |                    */
+/*   3     234    345    123                   |   call missing(value,freq);                                   |                    */
+/*                                             |                                                               |                    */
+/*  Some of the solutions use a macro array    |   if _n_=1 then do;                                           |                    */
+/*                                             |     declare hash h (ordered:'a');                             |                    */
+/*  %array(_col,values=%utl_varlist(sd1.have));|       h.definekey('value');                                   |                    */
+/*                                             |       h.definedata('value','freq');                           |                    */
+/*  %put &=_col1; /*_  COL1 = XX   */          |       h.definedone();                                         |                    */
+/*  %put &=_col2; /*  _COL2 = YY   */          |   end;                                                        |                    */
+/*  %put &=_col3; /*  _COL3 = ZZ   */          |   array val xx yy zz ;                                        |                    */
+/*  %put &=_coln; /*  _COLN = 3    */          |                                                               |                    */
+/*                                             |   do over val;                                                |                    */
+/*                                             |     if h.find(key:val)^=0 then freq=0;                        |                    */
+/*                                             |     freq=freq+1;                                              |                    */
+/*                                             |     h.replace(key:val,data:val,data:freq);                    |                    */
+/*  Note: In R factors have to be              |   end;                                                        |                    */
+/*        converted to character               |                                                               |                    */
+/*        Only when using table function       |   if end_of_have then                                         |                    */
+/*                                             |        h.output(dataset:'want');                              |                    */
+/*  acros used                                 |                                                               |                    */
+/*                                             | run;quit;                                                     |                    */
+/* gather   Alea Iacta   aleaiacta95@gmail.com |                                                               |                    */
+/* array    Ted Clay,    tclay@ashlandhome.net |                                                               |                    */
+/* varlist  Søren Lassen s.lassen@post.tele.dk |                                                               |                    */
+/*                                             |                                                               |                    */ *
+/*                                             | 1 R USING STATTRANSFER                                        |                    */
 /*                                             | ======================                                        | TMP.WANT total     */
 /*                                             |                                                               |                    */
-/*  Obs     XX     YY     ZZ                   | %utl_rbegin;                                                  | ROWNAMES HAVE FREQ */
+/*                                             | %utl_rbegin;                                                  | ROWNAMES HAVE FREQ */
 /*                                             | parmcards4;                                                   |                    */
-/*   1     123    456    234                   | library(haven)                                                |    1    123    3   */
-/*   2     456    123    345                   | have<-as.matrix(                                              |    2    234    2   */
-/*   3     234    345    123                   |   read_sas("d:/sd1/have.sas7bdat"));                          |    3    345    2   */
+/*                                             | library(haven)                                                |    1    123    3   */
+/*                                             | have<-as.matrix(                                              |    2    234    2   */
+/*                                             |   read_sas("d:/sd1/have.sas7bdat"));                          |    3    345    2   */
 /*                                             | want <- as.data.frame(table(have));                           |    4    456    2   */
-/*  Some of the solutions use a macro array    | want$have<-as.character(want$have);                           |                    */
+/*                                             | want$have<-as.character(want$have);                           |                    */
 /*                                             | source("c:/temp/fn_tosas9.R")                                 |                    */
-/*  %array(_col,values=%utl_varlist(sd1.have));| fn_tosas9(dataf=want)                                         |                    */
+/*                                             | fn_tosas9(dataf=want)                                         |                    */
 /*                                             | ;;;;                                                          |                    */
-/*  %put &=_col1; /*_  COL1 = XX   */          | %utl_rend;                                                    |                    */
-/*  %put &=_col2; /*  _COL2 = YY   */          |                                                               |                    */
-/*  %put &=_col3; /*  _COL3 = ZZ   */          | libname tmp "c:/temp";                                        |                    */
-/*  %put &=_coln; /*  _COLN = 3    */          | proc print data=tmp.want;                                     |                    */
+/*                                             | %utl_rend;                                                    |                    */
+/*                                             |                                                               |                    */
+/*                                             | libname tmp "c:/temp";                                        |                    */
+/*                                             | proc print data=tmp.want;                                     |                    */
 /*                                             | run;quit;                                                     |                    */
 /*                                             |                                                               |                    */
 /*                                             |                                                               |                    */
 /*                                             |                                                               |                    */
-/*  Note: In R factors have to be              | 2 R PURE SQL SOLUTION STATTRANSFER                            | WANT               */
-/*        converted to character               | ==================================                            |                    */
-/*        Only when using table function       |                                                               | ROWNAMES  VAL CNT  */
+/*                                             | 2 R PURE SQL SOLUTION STATTRANSFER                            | WANT               */
+/*                                             | ==================================                            |                    */
+/*                                             |                                                               | ROWNAMES  VAL CNT  */
 /*                                             | %utl_submit_r64x("                                            |                    */
-/* Macros used                                 | library(haven);                                               |     1     123  3   */
+/*                                             | library(haven);                                               |     1     123  3   */
 /*                                             | library(sqldf);                                               |     2     234  2   */
-/* gather   Alea Iacta   aleaiacta95@gmail.com | have<-                                                        |     3     345  2   */
-/* array    Ted Clay,    tclay@ashlandhome.net |   read_sas('d:/sd1/have.sas7bdat');                           |     4     456  2   */
-/* varlist  Søren Lassen s.lassen@post.tele.dk | have;                                                         |                    */
+/*                                             | have<-                                                        |     3     345  2   */
+/*                                             |   read_sas('d:/sd1/have.sas7bdat');                           |     4     456  2   */
+/*                                             | have;                                                         |                    */
 /*                                             | want <- sqldf('                                               |                    */
 /*                                             |   select                                                      |                    */
 /*                                             |      val                                                      |                    */
@@ -197,6 +231,48 @@ Some of the solutions use a macro array
 /* %put &=_coln; /*  _COLN = 3    */                                                                                      */
 /*                                                                                                                        */
 /**************************************************************************************************************************/
+
+/*___                    _               _
+ / _ \   ___  __ _ ___  | |__   __ _ ___| |__
+| | | | / __|/ _` / __| | `_ \ / _` / __| `_ \
+| |_| | \__ \ (_| \__ \ | | | | (_| \__ \ | | |
+ \___/  |___/\__,_|___/ |_| |_|\__,_|___/_| |_|
+
+*/
+
+data have;
+input xx yy zz;
+cards4;
+123 456 234
+456 123 345
+234 345 123
+;;;;
+run;quit;
+
+data _null_;
+
+  set have end=end_of_have;
+
+  call missing(value,freq);
+
+  if _n_=1 then do;
+    declare hash h (ordered:'a');
+      h.definekey('value');
+      h.definedata('value','freq');
+      h.definedone();
+  end;
+  array val xx yy zz ;
+
+  do over val;
+    if h.find(key:val)^=0 then freq=0;
+    freq=freq+1;
+    h.replace(key:val,data:val,data:freq);
+  end;
+
+  if end_of_have then
+       h.output(dataset:'want');
+
+run;quit;
 
 /*              _        _   _                        __
 / |  _ __   ___| |_ __ _| |_| |_ _ __ __ _ _ __  ___ / _| ___ _ __
@@ -418,6 +494,60 @@ run;quit;
 /*  4     456     2                                                                                                       */
 /*                                                                                                                        */
 /**************************************************************************************************************************/
+
+REPO
+------------------------------------------------------------------------------------------------------------------------------------------
+https://github.com/rogerjdeangelis/distinct-counts-for_3200-variables-and_660-thousand-records-using-HASH-SQL-and-proc-freq
+https://github.com/rogerjdeangelis/utl-append-and-split-tables-into-two-tables-one-with-common-variables-and-one-without-dosubl-hash
+https://github.com/rogerjdeangelis/utl-are-the-files-identical-or-was-the-file-corrupted-durring-transfer-hash
+https://github.com/rogerjdeangelis/utl-average-nap-time-for-three-babies-in-and-unsorted-table-using-a-hash-and-r
+https://github.com/rogerjdeangelis/utl-count-distinct-compound-keys-using-sql-and-hash-algorithms
+https://github.com/rogerjdeangelis/utl-create-a-list-of-male-students-at-achme-high-school-using_a_hash
+https://github.com/rogerjdeangelis/utl-create-a-state-diagram-table-hash-corresp-and-transpose
+https://github.com/rogerjdeangelis/utl-creating-two-tables-sum-of-weight-by-age-and-by-sex-using-a-hash-of-hashes_hoh
+https://github.com/rogerjdeangelis/utl-deduping-six-hundred-million-records-with-one-million-unique-sql-hash
+https://github.com/rogerjdeangelis/utl-deleting-multiple-rows-per-subject-with-condition-hash-and-dow
+https://github.com/rogerjdeangelis/utl-dosubl-persistent-hash-across-datasteps-and-procedures
+https://github.com/rogerjdeangelis/utl-elegant-hash-to-add-missing-weeks-by-customer
+https://github.com/rogerjdeangelis/utl-excluding-patients-that-had-same-condition-pre-and-post-clinical-randomization-hash
+https://github.com/rogerjdeangelis/utl-fast-efficient-hash-to-eliminate-duplicates-in-unsorted-grouped-data
+https://github.com/rogerjdeangelis/utl-fast-join-small_1g-table_with-a-moderate_50gb-tables-hash-sql
+https://github.com/rogerjdeangelis/utl-fast-normalization-and-join-using-vvaluex-arrays-sql-hash-untranspose-macro
+https://github.com/rogerjdeangelis/utl-hash-applying-business-rules-by-observation-when-data-and-rules-are-in-the-same-table
+https://github.com/rogerjdeangelis/utl-hash-filling-in-missing-gender-for-my-patients-appointments
+https://github.com/rogerjdeangelis/utl-hash-of-hashes-left-join-four-tables
+https://github.com/rogerjdeangelis/utl-hash-vs-summary-min-and-max-for-four-variables-by-region-for-l89-million-obs
+https://github.com/rogerjdeangelis/utl-hash_which-columns-have-duplicate-values-across-rows
+https://github.com/rogerjdeangelis/utl-in-memory-hash-output-shared-with-dosubl-hash-subprocess
+https://github.com/rogerjdeangelis/utl-loop-through-one-table-and-find-data-in-next-table--hash-dosubl-arts-transpose
+https://github.com/rogerjdeangelis/utl-make-new-column-with-the-previous-version-of-a-row-wps-hash-lag-and-r-code
+https://github.com/rogerjdeangelis/utl-multitasking-the-hash-for-a-very-fast-distinct-ids
+https://github.com/rogerjdeangelis/utl-no-need-for-sql-or-sort-merge-use-a-elegant-hash-excel-vlookup
+https://github.com/rogerjdeangelis/utl-only-keep-groups-without-duplicated-accounts-hash-sql
+https://github.com/rogerjdeangelis/utl-output-the-student-with-the-highest-grade-hash-defer-open
+https://github.com/rogerjdeangelis/utl-remove-duplicate-words-from-a-sentence-hash-solution
+https://github.com/rogerjdeangelis/utl-replicate-sets-of-rows-across-many-columns-elegant-hash
+https://github.com/rogerjdeangelis/utl-sas-fcmp-hash-stored-programs-python-r-functions-to-find-common-words
+https://github.com/rogerjdeangelis/utl-sharing-hash-storage-with-two-separate-datasteps-in-the-same-SAS-session
+https://github.com/rogerjdeangelis/utl-simple-example-of-a-hash-of-hashes-hoh-to-split_a-table
+https://github.com/rogerjdeangelis/utl-simplest-case-of-a-hash-or-sql-lookup
+https://github.com/rogerjdeangelis/utl-two-table-join-benchmarks-hash-sortmerge-keyindex-and-sasfile
+https://github.com/rogerjdeangelis/utl-two-techniques-for-a-persistent-hash-across-datasteps-and-procedures
+https://github.com/rogerjdeangelis/utl-using-a-hash-to-compute-cumulative-sum-without-sorting
+https://github.com/rogerjdeangelis/utl_benchmarks_hash_merge_of_two_un-sorted_data_sets_with_some_common_variables
+https://github.com/rogerjdeangelis/utl_hash_lookup_with_multiple_keys_nice_simple_example
+https://github.com/rogerjdeangelis/utl_hash_merge_of_two_un-sorted_data_sets_with_some_common_variables
+https://github.com/rogerjdeangelis/utl_hash_persistent
+https://github.com/rogerjdeangelis/utl_how_to_reuse_hash_table_without_reloading_sort_of
+https://github.com/rogerjdeangelis/utl_many_to_many_merge_in_hash_datastep_and_sql
+https://github.com/rogerjdeangelis/utl_nice_example_of_a_hash_of_hashes_by_paul_and_don
+https://github.com/rogerjdeangelis/utl_nice_hash_example_of_rolling_count_of_dates_plus-minus_2_days_of_current_date
+https://github.com/rogerjdeangelis/utl_select_ages_less_than_the_median_age_in_a_second_table_paul_dorfman_hash_solution
+https://github.com/rogerjdeangelis/utl_simple_one_to_many_join_using_SQL_and_datastep_hashes
+https://github.com/rogerjdeangelis/utl_simplified_hash_how_many_of_my_friends_are_in_next_years_math_class
+https://github.com/rogerjdeangelis/utl_using_a_hash_to_transpose_and_reorder_a_table
+https://github.com/rogerjdeangelis/utl_using_md5hash_to_create_checksums_for_programs_and_binary_files
+
 
 /*              _
   ___ _ __   __| |
